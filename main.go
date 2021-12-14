@@ -2,14 +2,12 @@ package main
 
 import (
 	h "RESTful_API_Gin/internal/handler"
-	"RESTful_API_Gin/pkg"
-	"fmt"
 	"github.com/gin-gonic/gin"
 )
 
-func main()  {
+func main() {
 	router := gin.Default()
-	fmt.Println(pkg.HashPassword("Mishasha"))
+
 	album := router.Group("/album", h.UserIdentity)
 	{
 		album.POST("/:id", h.GetAlbumById)

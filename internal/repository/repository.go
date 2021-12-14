@@ -46,7 +46,7 @@ func GetAlbumByID(id string) (m.Album, error) {
 	defer conn.Close()
 	rov := conn.QueryRow(fmt.Sprintf("SELECT * FROM `albums` WHERE id = %s", id))
 
-	if rov.Err() != nil  {
+	if rov.Err() != nil {
 		return m.Album{}, rov.Err()
 	}
 
@@ -62,7 +62,7 @@ func GetAlbumByID(id string) (m.Album, error) {
 	return album, nil
 }
 
-func AddAlbum (album m.Album) (m.Album, error) {
+func AddAlbum(album m.Album) (m.Album, error) {
 	conn := dbConn()
 	defer conn.Close()
 	_, err := conn.Exec(fmt.Sprintf("INSERT INTO albums (Title, Artist, Price) values('%s', '%s', '%f')",
@@ -82,14 +82,20 @@ func DeleteAlbum(id string) error {
 	return err
 }
 
-func UpdateAlbum (title string, artist string, price string, id string) error {
-	if title == "" { title = "Title"} else {
+func UpdateAlbum(title string, artist string, price string, id string) error {
+	if title == "" {
+		title = "Title"
+	} else {
 		title = fmt.Sprintf("'%s'", title)
 	}
-	if artist == "" { artist = "Artist"} else {
+	if artist == "" {
+		artist = "Artist"
+	} else {
 		artist = fmt.Sprintf("'%s'", artist)
 	}
-	if price == "0" { price = "Price"} else {
+	if price == "0" {
+		price = "Price"
+	} else {
 		price = fmt.Sprintf("'%s'", price)
 	}
 
@@ -136,7 +142,17 @@ func CheckName(name string) error {
 	conn := dbConn()
 	defer conn.Close()
 	rov := conn.QueryRow(fmt.Sprintf("SELECT id FROM user WHERE Name = '%s'", name))
-	fmt.Println(rov.Scan())
+	var id uint16
+	err := rov.Scan(&id)
 
-	return nil
+	return err
+}
+
+func AddUser(userData m.LoginData) error {
+	conn := dbConn()
+	defer conn.Close()
+	_, err := conn.Exec(fmt.Sprintf("INSERT INTO user (Name, Password) values('%s', '%s')",
+		userData.Name, userData.Password))
+
+	return err
 }

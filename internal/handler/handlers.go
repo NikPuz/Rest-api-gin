@@ -14,7 +14,7 @@ import (
 
 func GetAlbums(c *gin.Context) {
 	records := 3
-	page, err := strconv.ParseUint(c.Param("page"), 0 , 32)
+	page, err := strconv.ParseUint(c.Param("page"), 0, 32)
 	if err != nil || page == 0 {
 		page = 1
 	}
@@ -26,7 +26,7 @@ func GetAlbums(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, albums)
 }
 
-func GetAlbumById(c *gin.Context)  {
+func GetAlbumById(c *gin.Context) {
 	id := c.Param("id")
 	album, err := repo.GetAlbumByID(id)
 
@@ -87,26 +87,26 @@ func UpdateAlbum(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "command executed"})
 }
 
-func Login (c *gin.Context) {
-// ПОЛУЧЕНИЕ ДАННЫХ
+func Login(c *gin.Context) {
+	// ПОЛУЧЕНИЕ ДАННЫХ
 
 	var loginData models.LoginData
 	if err := c.BindJSON(&loginData); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "Invalid json provided"})
 		return
-}
-// ПРОВЕРКА ДАННЫХ
+	}
+	// ПРОВЕРКА ДАННЫХ
 
 	id, password, err := repo.GetPasswordAndIdByName(loginData.Name)
 
 	if err == sql.ErrNoRows || !pkg.CheckPasswordHash(loginData.Password, password) {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "username or password is incorrect"})
 		return
-		} else if err != nil {
-				c.Writer.Write([]byte(err.Error()))
-				return
-			}
-// СОЗДАНИЕ ТОКЕНОВ
+	} else if err != nil {
+		c.Writer.Write([]byte(err.Error()))
+		return
+	}
+	// СОЗДАНИЕ ТОКЕНОВ
 
 	jwToken, err := pkg.CreateJWToken(id)
 	if err != nil {
@@ -119,17 +119,17 @@ func Login (c *gin.Context) {
 		c.Writer.Write([]byte(err.Error()))
 		return
 	}
-// СОХРАНЕНИЕ ТОКЕНА
+	// СОХРАНЕНИЕ ТОКЕНА
 
 	ExpiresATToken := time.Now().Add(15 * time.Minute)
 	if err := repo.SaveRToken(id, rToken, ExpiresATToken); err != nil {
 		c.Writer.Write([]byte(err.Error()))
 		return
 	}
-// ОТПРАВКА ТОКЕНОВ
+	// ОТПРАВКА ТОКЕНОВ
 
 	c.JSON(http.StatusOK, gin.H{
-		"accessToken": jwToken,
+		"accessToken":  jwToken,
 		"refreshToken": rToken,
 	})
 }
@@ -140,8 +140,30 @@ func Signin(c *gin.Context) {
 	var signinData models.LoginData
 	if err := c.BindJSON(&signinData); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "Invalid json provided"})
+		return
 	}
+	fmt.Println(signinData)
+	// ПРОВЕРКА ИМЕНИ
 
-	repo.CheckName(signinData.Name)
+	if err := repo.CheckName(signinData.Name); err == nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "this name is taken"})
+		return
+	} else if err != sql.ErrNoRows {
+		c.Writer.Write([]byte(err.Error()))
+		return
+	}
+	// ХЕШИРОВАНИЕ ПАРОЛЯ
 
+	if err := pkg.HashPassword(&signinData.Password); err != nil {
+		c.Writer.Write([]byte(err.Error()))
+		return
+	}
+	// СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ
+
+	err := repo.AddUser(signinData)
+	if err != nil {
+		c.Writer.Write([]byte(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "user created"})
 }
