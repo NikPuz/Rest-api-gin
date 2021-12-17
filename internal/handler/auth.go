@@ -1,93 +1,26 @@
 package handler
 
 import (
-	repo "RESTful_API_Gin/internal/repository"
 	"RESTful_API_Gin/models"
 	"RESTful_API_Gin/pkg"
 	"database/sql"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
 	"time"
 )
 
-func GetAlbums(c *gin.Context) {
-	records := 3
-	page, err := strconv.ParseUint(c.Param("page"), 0, 32)
-	if err != nil || page == 0 {
-		page = 1
-	}
-
-	albums, err := repo.GetAlbumsPage(int(page), records)
-	if err != nil {
-		panic(err.Error())
-	}
-	c.IndentedJSON(http.StatusOK, albums)
+type AuthHandlers struct {
+	repo models.Repository
 }
 
-func GetAlbumById(c *gin.Context) {
-	id := c.Param("id")
-	album, err := repo.GetAlbumByID(id)
-
-	if err == sql.ErrNoRows {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
-		return
-	} else if err != nil {
-		panic(err.Error())
-	}
-
-	c.IndentedJSON(http.StatusOK, album)
+func RegisterAuthHandlers(group *gin.RouterGroup, repo models.Repository) {
+	h := AuthHandlers{repo: repo}
+	group.POST("/login", h.Login)
+	group.POST("/signin", h.Signin)
 }
 
-func AddAlbum(c *gin.Context) {
-	var newAlbums models.Album
-
-	err := c.BindJSON(&newAlbums)
-	if err != nil {
-		c.Writer.Write([]byte(err.Error()))
-		return
-	}
-
-	newAlbums, err = repo.AddAlbum(newAlbums)
-	if err != nil {
-		c.Writer.Write([]byte(err.Error()))
-		return
-	}
-
-	c.IndentedJSON(http.StatusCreated, gin.H{"message": "command executed"})
-}
-
-func DeleteAlbum(c *gin.Context) {
-	id := c.Param("id")
-
-	err := repo.DeleteAlbum(id)
-	if err != nil {
-		c.Writer.Write([]byte(err.Error()))
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "command executed"})
-}
-
-func UpdateAlbum(c *gin.Context) {
-	var newAlbum models.Album
-
-	if err := c.BindJSON(&newAlbum); err != nil {
-		c.Writer.Write([]byte(err.Error()))
-		return
-	}
-
-	err := repo.UpdateAlbum(newAlbum.Title, newAlbum.Artist, fmt.Sprint(newAlbum.Price), fmt.Sprint(newAlbum.ID))
-	if err != nil {
-		c.Writer.Write([]byte(err.Error()))
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "command executed"})
-}
-
-func Login(c *gin.Context) {
+func (h *AuthHandlers) Login(c *gin.Context) {
 	// ПОЛУЧЕНИЕ ДАННЫХ
 
 	var loginData models.LoginData
@@ -97,7 +30,7 @@ func Login(c *gin.Context) {
 	}
 	// ПРОВЕРКА ДАННЫХ
 
-	id, password, err := repo.GetPasswordAndIdByName(loginData.Name)
+	id, password, err := h.repo.GetPasswordAndIdByName(loginData.Name)
 
 	if err == sql.ErrNoRows || !pkg.CheckPasswordHash(loginData.Password, password) {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "username or password is incorrect"})
@@ -122,7 +55,7 @@ func Login(c *gin.Context) {
 	// СОХРАНЕНИЕ ТОКЕНА
 
 	ExpiresATToken := time.Now().Add(15 * time.Minute)
-	if err := repo.SaveRToken(id, rToken, ExpiresATToken); err != nil {
+	if err := h.repo.SaveRToken(id, rToken, ExpiresATToken); err != nil {
 		c.Writer.Write([]byte(err.Error()))
 		return
 	}
@@ -134,7 +67,7 @@ func Login(c *gin.Context) {
 	})
 }
 
-func Signin(c *gin.Context) {
+func (h *AuthHandlers) Signin(c *gin.Context) {
 	// ПОЛУЧЕНИЕ ДАННЫХ
 
 	var signinData models.LoginData
@@ -145,7 +78,7 @@ func Signin(c *gin.Context) {
 	fmt.Println(signinData)
 	// ПРОВЕРКА ИМЕНИ
 
-	if err := repo.CheckName(signinData.Name); err == nil {
+	if err := h.repo.CheckName(signinData.Name); err == nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "this name is taken"})
 		return
 	} else if err != sql.ErrNoRows {
@@ -160,7 +93,7 @@ func Signin(c *gin.Context) {
 	}
 	// СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ
 
-	err := repo.AddUser(signinData)
+	err := h.repo.AddUser(signinData)
 	if err != nil {
 		c.Writer.Write([]byte(err.Error()))
 		return

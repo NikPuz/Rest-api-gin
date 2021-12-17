@@ -3,7 +3,7 @@ package pkg
 import "golang.org/x/crypto/bcrypt"
 
 func HashPassword(password *string) error {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(*password), 15)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(*password), 10)
 	*password = string(bytes)
 	return err
 }

@@ -8,6 +8,16 @@ import (
 	"time"
 )
 
+type MySQLRepository struct {
+	Conn *sql.DB
+}
+
+func NewMySQLRepository() MySQLRepository {
+	repo := MySQLRepository{}
+	repo.Conn = dbConn()
+	return repo
+}
+
 func dbConn() (db *sql.DB) {
 	dbDriver := "mysql"
 	dbUser := "root"
@@ -20,11 +30,9 @@ func dbConn() (db *sql.DB) {
 	return db
 }
 
-func GetAlbumsPage(page int, records int) ([]m.Album, error) {
-	page = (page * records) - 3
-	conn := dbConn()
-	defer conn.Close()
-	rovs, err := conn.Query(fmt.Sprintf("SELECT * FROM `albums` LIMIT %d, %d", page, records))
+func (r *MySQLRepository) GetAlbumsPage(page int, records int) ([]m.Album, error) {
+	page = (page * records) - records
+	rovs, err := r.Conn.Query(fmt.Sprintf("SELECT * FROM `albums` LIMIT %d, %d", page, records))
 	if err != nil {
 		return []m.Album{}, err
 	}
@@ -41,7 +49,7 @@ func GetAlbumsPage(page int, records int) ([]m.Album, error) {
 	return result, err
 }
 
-func GetAlbumByID(id string) (m.Album, error) {
+func (*MySQLRepository) GetAlbumByID(id string) (m.Album, error) {
 	conn := dbConn()
 	defer conn.Close()
 	rov := conn.QueryRow(fmt.Sprintf("SELECT * FROM `albums` WHERE id = %s", id))
@@ -62,7 +70,7 @@ func GetAlbumByID(id string) (m.Album, error) {
 	return album, nil
 }
 
-func AddAlbum(album m.Album) (m.Album, error) {
+func (*MySQLRepository) AddAlbum(album m.Album) (m.Album, error) {
 	conn := dbConn()
 	defer conn.Close()
 	_, err := conn.Exec(fmt.Sprintf("INSERT INTO albums (Title, Artist, Price) values('%s', '%s', '%f')",
@@ -74,7 +82,7 @@ func AddAlbum(album m.Album) (m.Album, error) {
 	return album, err
 }
 
-func DeleteAlbum(id string) error {
+func (*MySQLRepository) DeleteAlbum(id string) error {
 	conn := dbConn()
 	defer conn.Close()
 	_, err := conn.Exec(fmt.Sprintf("DELETE FROM albums WHERE id = %s", id))
@@ -82,7 +90,7 @@ func DeleteAlbum(id string) error {
 	return err
 }
 
-func UpdateAlbum(title string, artist string, price string, id string) error {
+func (*MySQLRepository) UpdateAlbum(title string, artist string, price string, id string) error {
 	if title == "" {
 		title = "Title"
 	} else {
@@ -107,7 +115,7 @@ func UpdateAlbum(title string, artist string, price string, id string) error {
 	return err
 }
 
-func GetPasswordAndIdByName(name string) (string, string, error) {
+func (*MySQLRepository) GetPasswordAndIdByName(name string) (string, string, error) {
 	conn := dbConn()
 	defer conn.Close()
 	rov := conn.QueryRow(fmt.Sprintf("SELECT id, password FROM user WHERE Name = '%s'", name))
@@ -129,7 +137,7 @@ func GetPasswordAndIdByName(name string) (string, string, error) {
 	return id, password, nil
 }
 
-func SaveRToken(id string, rToken string, ExpiresATToken time.Time) error {
+func (*MySQLRepository) SaveRToken(id string, rToken string, ExpiresATToken time.Time) error {
 	conn := dbConn()
 	defer conn.Close()
 	_, err := conn.Query(fmt.Sprintf("UPDATE user SET RefreshToken = '%s', ExpiresATToken = '%s' WHERE id = %s",
@@ -138,7 +146,7 @@ func SaveRToken(id string, rToken string, ExpiresATToken time.Time) error {
 	return err
 }
 
-func CheckName(name string) error {
+func (*MySQLRepository) CheckName(name string) error {
 	conn := dbConn()
 	defer conn.Close()
 	rov := conn.QueryRow(fmt.Sprintf("SELECT id FROM user WHERE Name = '%s'", name))
@@ -148,7 +156,7 @@ func CheckName(name string) error {
 	return err
 }
 
-func AddUser(userData m.LoginData) error {
+func (*MySQLRepository) AddUser(userData m.LoginData) error {
 	conn := dbConn()
 	defer conn.Close()
 	_, err := conn.Exec(fmt.Sprintf("INSERT INTO user (Name, Password) values('%s', '%s')",
