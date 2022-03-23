@@ -1,0 +1,28 @@
+version: '3.7'
+
+services:
+  db:
+    container_name: "test_db"
+    image: mysql:latest 
+    restart: always
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  api:
+    container_name: "test_api"
+    build:
+      dockerfile: "app.Dockerfile"
+    restart: always
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
