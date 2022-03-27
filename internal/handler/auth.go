@@ -18,9 +18,9 @@ func RegisterAuthHandlers(group *gin.RouterGroup, authService entity.IAuthServic
 	authHandler.authService = authService
 	authHandler.logger = logger
 
+	group.POST("/signin", authHandler.Signin)
 	group.POST("/login", authHandler.Login)
 	group.POST("/login/refresh", authHandler.RefreshLogin)
-	group.POST("/signin", authHandler.Signin)
 }
 
 func (h authHandler) Signin(c *gin.Context) {

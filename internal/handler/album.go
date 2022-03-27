@@ -11,7 +11,7 @@ import (
 
 type albumHandler struct {
 	albumService entity.IAlbumService
-	logger *zap.Logger
+	logger       *zap.Logger
 }
 
 func RegisterAlbumHandlers(g *gin.RouterGroup, albumService entity.IAlbumService, logger *zap.Logger) {
@@ -20,16 +20,14 @@ func RegisterAlbumHandlers(g *gin.RouterGroup, albumService entity.IAlbumService
 	albumHandler.logger = logger
 
 	g.GET("/albums/", albumHandler.GetAlbums)
-	g.GET("/albums/:page", albumHandler.GetAlbums)
-
-	g.GET("/album/:id", UserIdentity, albumHandler.GetById)
-	g.POST("/album/add", UserIdentity, albumHandler.Add)
-	g.POST("/album/update", UserIdentity, albumHandler.Update)
-	g.DELETE("/album/:id", UserIdentity, albumHandler.Delete)
+	g.GET("/albums/:id", UserIdentity, albumHandler.GetById)
+	g.GET("/albums/page/:page", albumHandler.GetAlbums)
+	g.POST("/albums", UserIdentity, albumHandler.Add)
+	g.PATCH("/albums", UserIdentity, albumHandler.Update)
+	g.DELETE("/albums/:id", UserIdentity, albumHandler.Delete)
 }
 
 func (h albumHandler) GetAlbums(c *gin.Context) {
-	
 	page := c.Param("page")
 
 	albums, err := h.albumService.GetPage(page)
@@ -38,7 +36,7 @@ func (h albumHandler) GetAlbums(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Server Err"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"albums": albums})
 }
 
@@ -47,7 +45,7 @@ func (h albumHandler) GetById(c *gin.Context) {
 	id := c.Param("id")
 
 	album, err := h.albumService.GetById(id)
-	
+
 	if err != nil {
 		h.logger.Error("Failed fetch album by id", zap.Error(err))
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Server Err"})

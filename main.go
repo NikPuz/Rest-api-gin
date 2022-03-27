@@ -16,11 +16,8 @@ import (
 )
 
 func main() {
-	defer func() {
-		if r := recover(); r != nil {
-		}
-	}()
 	fmt.Println("Поехало!")
+
 	logger := initZapLogger()
 
 	initViperConfigger(logger)
@@ -54,7 +51,7 @@ func dbConnConfig(logger *zap.Logger) *sql.DB {
 
 func serverConfig(router http.Handler) *http.Server {
 	return &http.Server{
-		Addr:           "8000",
+		Addr:           ":" + viper.GetString("APP_PORT"),
 		Handler:        router,
 		ReadTimeout:    5 * time.Second,
 		WriteTimeout:   5 * time.Second,

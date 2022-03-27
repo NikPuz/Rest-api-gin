@@ -3,7 +3,7 @@ version: '3.7'
 services:
   db:
     container_name: "test_db"
-    image: mysql:latest 
+    image: mysql:8.0.28-oracle
     restart: always
     ports:
       - "${DB_PORT}:${DB_PORT}"
@@ -15,9 +15,11 @@ services:
       - mysql_data:/var/lib/mysql
 
   api:
+    env_file:
+      - ./config/app.env
     container_name: "test_api"
     build:
-      dockerfile: "app.Dockerfile"
+      dockerfile: "Dockerfile"
     restart: always
     ports:
       - "${APP_PORT}:${APP_PORT}"
